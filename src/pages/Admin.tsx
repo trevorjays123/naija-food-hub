@@ -80,7 +80,7 @@ export default function AdminPage() {
     name: "",
     description: "",
     price: "",
-    category: "nigerian" as const,
+    category: "nigerian" as MenuItem['category'],
     image_url: "",
     available: true,
   });

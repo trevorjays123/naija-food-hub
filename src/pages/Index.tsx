@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowRight, Clock, MapPin, Phone, Star, Utensils } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/Navbar";
+import { SEO } from "@/components/SEO";
 import { supabase } from "@/integrations/supabase/client";
 import heroFood from "@/assets/hero-food.jpg";
 import catNigerian from "@/assets/cat-nigerian.jpg";
@@ -35,6 +36,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-brand-secondary">
+      <SEO title="Taste Kitchen — Nigerian, Continental & Fast Food in Lagos" description="Order authentic Nigerian, continental and fast food online. Fast Lagos delivery, secure payments, live order tracking." canonical="/" />
       <Navbar />
       
       {/* Hero Section */}
@@ -234,6 +236,8 @@ export default function Home() {
               <ul className="space-y-2 text-sm text-brand-secondary/70">
                 <li><Link to="/menu" className="hover:text-brand-accent transition-colors">Our Menu</Link></li>
                 <li><Link to="/track" className="hover:text-brand-accent transition-colors">Track Order</Link></li>
+                <li><Link to="/about" className="hover:text-brand-accent transition-colors">About Us</Link></li>
+                <li><Link to="/contact" className="hover:text-brand-accent transition-colors">Contact</Link></li>
                 <li><Link to="/auth" className="hover:text-brand-accent transition-colors">My Account</Link></li>
               </ul>
             </div>

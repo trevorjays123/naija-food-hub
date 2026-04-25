@@ -15,6 +15,7 @@ import {
   MapPin,
   Phone,
   Upload,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -131,6 +132,41 @@ export default function AdminPage() {
     setUploading(false);
     toast({ title: "Image uploaded" });
     e.target.value = "";
+  };
+
+  const handleImageDelete = async () => {
+    if (!menuForm.image_url) return;
+    if (!confirm("Remove this image?")) return;
+    setUploading(true);
+
+    // Try to remove from storage if the URL belongs to our bucket
+    const marker = "/storage/v1/object/public/menu-images/";
+    const idx = menuForm.image_url.indexOf(marker);
+    if (idx !== -1) {
+      const path = decodeURIComponent(menuForm.image_url.slice(idx + marker.length));
+      const { error: removeError } = await supabase.storage.from('menu-images').remove([path]);
+      if (removeError) {
+        // Non-fatal: continue clearing image_url even if file is already gone
+        console.warn("Storage remove failed:", removeError.message);
+      }
+    }
+
+    if (editingItem) {
+      const { error: updateError } = await supabase
+        .from('menu_items')
+        .update({ image_url: null })
+        .eq('id', editingItem.id);
+      if (updateError) {
+        setUploading(false);
+        toast({ title: "Update failed", description: updateError.message, variant: "destructive" });
+        return;
+      }
+      fetchData();
+    }
+
+    setMenuForm((f) => ({ ...f, image_url: "" }));
+    setUploading(false);
+    toast({ title: "Image removed" });
   };
 
   useEffect(() => {
@@ -445,8 +481,17 @@ export default function AdminPage() {
                     <div className="space-y-2">
                       <Label>Item Image</Label>
                       {menuForm.image_url && (
-                        <div className="relative w-full h-40 rounded-lg overflow-hidden bg-brand-primary/5">
+                        <div className="relative w-full h-40 rounded-lg overflow-hidden bg-brand-primary/5 group">
                           <img src={menuForm.image_url} alt="Preview" className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={handleImageDelete}
+                            disabled={uploading}
+                            aria-label="Remove image"
+                            className="absolute top-2 right-2 w-8 h-8 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center shadow-md hover:opacity-90 disabled:opacity-50"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
                         </div>
                       )}
                       <div className="flex gap-2">

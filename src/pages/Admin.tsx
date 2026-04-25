@@ -85,6 +85,53 @@ export default function AdminPage() {
     image_url: "",
     available: true,
   });
+  const [uploading, setUploading] = useState(false);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Invalid file", description: "Please select an image file.", variant: "destructive" });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "File too large", description: "Max 5MB.", variant: "destructive" });
+      return;
+    }
+    setUploading(true);
+    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+    const path = `${menuForm.category}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const { error: uploadError } = await supabase.storage
+      .from('menu-images')
+      .upload(path, file, { cacheControl: '3600', upsert: false, contentType: file.type });
+
+    if (uploadError) {
+      setUploading(false);
+      toast({ title: "Upload failed", description: uploadError.message, variant: "destructive" });
+      return;
+    }
+
+    const { data: { publicUrl } } = supabase.storage.from('menu-images').getPublicUrl(path);
+
+    // If editing an existing item, persist immediately so image_url is updated even before Save
+    if (editingItem) {
+      const { error: updateError } = await supabase
+        .from('menu_items')
+        .update({ image_url: publicUrl })
+        .eq('id', editingItem.id);
+      if (updateError) {
+        setUploading(false);
+        toast({ title: "Update failed", description: updateError.message, variant: "destructive" });
+        return;
+      }
+      fetchData();
+    }
+
+    setMenuForm((f) => ({ ...f, image_url: publicUrl }));
+    setUploading(false);
+    toast({ title: "Image uploaded" });
+    e.target.value = "";
+  };
 
   useEffect(() => {
     const checkAdmin = async () => {

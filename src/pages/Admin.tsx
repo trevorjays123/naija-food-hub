@@ -559,6 +559,16 @@ export default function AdminPage() {
                             )}
                           </div>
                         </label>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={openGallery}
+                          disabled={uploading}
+                          className="gap-2"
+                        >
+                          <ImageIcon className="w-4 h-4" />
+                          Gallery
+                        </Button>
                       </div>
                       <Input
                         value={menuForm.image_url}

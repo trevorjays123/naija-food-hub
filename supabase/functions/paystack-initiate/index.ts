@@ -45,7 +45,7 @@ serve(async (req) => {
         email,
         amount: Math.round(amount),
         reference: `TK_${order_id}_${Date.now()}`,
-        callback_url: `${req.headers.get("origin")}/track`,
+        callback_url: `${req.headers.get("origin")}/order/${order_id}`,
         metadata: {
           ...metadata,
           order_id,

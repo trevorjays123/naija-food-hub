@@ -1,11 +1,12 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import { Search, Package, Clock, CheckCircle, Truck, XCircle, Loader2, MapPin, Phone, SeparatorHorizontal } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { Search, Package, Clock, CheckCircle, Truck, XCircle, Loader2, MapPin, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Navbar } from "@/components/Navbar";
+import { SEO } from "@/components/SEO";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -48,49 +49,58 @@ const statusLabels: Record<string, string> = {
 };
 
 export default function TrackOrderPage() {
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchParams] = useSearchParams();
+  const initialId = searchParams.get("id") || "";
+  const [searchQuery, setSearchQuery] = useState(initialId);
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const { toast } = useToast();
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) return;
-    
+  const lookup = async (q: string) => {
+    if (!q.trim()) return;
     setLoading(true);
     setSearched(true);
-    
-    // Try to find by order ID or paystack reference
     const { data, error } = await supabase
       .from('orders')
-      .select(`
-        *,
-        order_items (
-          item_name,
-          quantity,
-          unit_price
-        )
-      `)
-      .or(`id.eq.${searchQuery},paystack_reference.eq.${searchQuery}`)
-      .single();
-    
+      .select(`*, order_items (item_name, quantity, unit_price)`)
+      .or(`id.eq.${q},paystack_reference.eq.${q}`)
+      .maybeSingle();
     if (error || !data) {
-      toast({
-        title: "Order not found",
-        description: "Please check your order ID and try again.",
-        variant: "destructive",
-      });
+      toast({ title: "Order not found", description: "Please check your order ID and try again.", variant: "destructive" });
       setOrder(null);
     } else {
       setOrder(data as Order);
     }
-    
     setLoading(false);
   };
 
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    lookup(searchQuery);
+  };
+
+  useEffect(() => {
+    if (initialId) lookup(initialId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialId]);
+
+  useEffect(() => {
+    if (!order?.id) return;
+    const channel = supabase
+      .channel(`track-${order.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${order.id}` },
+        (payload) => setOrder((prev) => prev ? { ...prev, ...(payload.new as any) } : prev)
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [order?.id]);
+
   return (
     <div className="min-h-screen bg-brand-secondary">
+      <SEO title="Track Order · Taste Kitchen" description="Track your Taste Kitchen delivery in real time." />
       <Navbar />
       
       <div className="container mx-auto px-6 py-12">

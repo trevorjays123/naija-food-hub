@@ -150,7 +150,7 @@ export default function AdminPage() {
   const handleUpdateOrderStatus = async (orderId: string, newStatus: string) => {
     const { error } = await supabase
       .from('orders')
-      .update({ delivery_status: newStatus })
+      .update({ delivery_status: newStatus as any })
       .eq('id', orderId);
     
     if (error) {
@@ -170,7 +170,7 @@ export default function AdminPage() {
       name: menuForm.name,
       description: menuForm.description,
       price: parseFloat(menuForm.price),
-      category: menuForm.category,
+      category: menuForm.category as 'nigerian' | 'continental' | 'fastfood',
       image_url: menuForm.image_url || null,
       available: menuForm.available,
     };
@@ -189,7 +189,7 @@ export default function AdminPage() {
     } else {
       const { error } = await supabase
         .from('menu_items')
-        .insert(itemData);
+        .insert([itemData]);
       
       if (error) {
         toast({ title: "Create failed", description: error.message, variant: "destructive" });

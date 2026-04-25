@@ -88,6 +88,53 @@ export default function AdminPage() {
     available: true,
   });
   const [uploading, setUploading] = useState(false);
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [galleryLoading, setGalleryLoading] = useState(false);
+  const [galleryImages, setGalleryImages] = useState<{ path: string; url: string; name: string }[]>([]);
+
+  const loadGallery = async () => {
+    setGalleryLoading(true);
+    const folders = ["", "nigerian", "continental", "fastfood"];
+    const all: { path: string; url: string; name: string; created: string }[] = [];
+    for (const folder of folders) {
+      const { data, error } = await supabase.storage
+        .from("menu-images")
+        .list(folder, { limit: 200, sortBy: { column: "created_at", order: "desc" } });
+      if (error) continue;
+      for (const f of data || []) {
+        // Skip subfolder placeholders (no metadata)
+        if (!f.name || !f.metadata) continue;
+        const path = folder ? `${folder}/${f.name}` : f.name;
+        const { data: { publicUrl } } = supabase.storage.from("menu-images").getPublicUrl(path);
+        all.push({ path, url: publicUrl, name: f.name, created: f.created_at || "" });
+      }
+    }
+    all.sort((a, b) => (b.created || "").localeCompare(a.created || ""));
+    setGalleryImages(all);
+    setGalleryLoading(false);
+  };
+
+  const openGallery = () => {
+    setGalleryOpen(true);
+    loadGallery();
+  };
+
+  const selectGalleryImage = async (url: string) => {
+    if (editingItem) {
+      const { error } = await supabase
+        .from("menu_items")
+        .update({ image_url: url })
+        .eq("id", editingItem.id);
+      if (error) {
+        toast({ title: "Update failed", description: error.message, variant: "destructive" });
+        return;
+      }
+      fetchData();
+    }
+    setMenuForm((f) => ({ ...f, image_url: url }));
+    setGalleryOpen(false);
+    toast({ title: "Image selected" });
+  };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

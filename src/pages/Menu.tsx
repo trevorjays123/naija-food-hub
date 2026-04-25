@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
-import { Plus, Minus, ShoppingBag, Search, Star, Utensils } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
+import { Plus, Minus, ShoppingBag, Search, Utensils } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Navbar } from "@/components/Navbar";
+import { SEO } from "@/components/SEO";
 import { useCart } from "@/hooks/use-cart";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -24,10 +26,19 @@ export default function MenuPage() {
   const [items, setItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const { addItem, items: cartItems, updateQuantity } = useCart();
   const { toast } = useToast();
-  
+
   const activeCategory = searchParams.get("category") || "all";
+
+  useEffect(() => {
+    const itemId = searchParams.get("item");
+    if (itemId && items.length) {
+      const found = items.find((i) => i.id === itemId);
+      if (found) setSelectedItem(found);
+    }
+  }, [searchParams, items]);
 
   useEffect(() => {
     const fetchMenu = async () => {
@@ -82,6 +93,7 @@ export default function MenuPage() {
 
   return (
     <div className="min-h-screen bg-brand-secondary">
+      <SEO title="Menu · Taste Kitchen" description="Browse our Nigerian, continental and fast food menu. Order online with fast Lagos delivery." />
       <Navbar />
       
       {/* Header */}

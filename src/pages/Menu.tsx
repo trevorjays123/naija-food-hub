@@ -164,25 +164,27 @@ export default function MenuPage() {
               const qty = getCartQuantity(item.id);
               return (
                 <div key={item.id} className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-300">
-                  <div className="aspect-square bg-brand-primary/5 relative overflow-hidden">
-                    {item.image_url ? (
-                      <img 
-                        src={item.image_url} 
-                        alt={item.name}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-brand-primary/20">
-                        <Utensils className="w-12 h-12" />
+                  <button
+                    type="button"
+                    onClick={() => setSelectedItem(item)}
+                    className="block w-full text-left"
+                    aria-label={`View details for ${item.name}`}
+                  >
+                    <div className="aspect-square bg-brand-primary/5 relative overflow-hidden">
+                      {item.image_url ? (
+                        <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" loading="lazy" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-brand-primary/20">
+                          <Utensils className="w-12 h-12" />
+                        </div>
+                      )}
+                      <div className="absolute top-3 left-3">
+                        <span className="px-3 py-1 bg-brand-accent/90 text-brand-primary text-xs font-semibold rounded-full capitalize">
+                          {item.category}
+                        </span>
                       </div>
-                    )}
-                    <div className="absolute top-3 left-3">
-                      <span className="px-3 py-1 bg-brand-accent/90 text-brand-primary text-xs font-semibold rounded-full capitalize">
-                        {item.category}
-                      </span>
                     </div>
-                  </div>
+                  </button>
                   <div className="p-4">
                     <h3 className="font-display text-lg font-semibold text-brand-primary mb-1">{item.name}</h3>
                     <p className="text-muted-foreground text-sm line-clamp-2 mb-3">{item.description}</p>
@@ -225,6 +227,40 @@ export default function MenuPage() {
           </div>
         )}
       </div>
+
+      {/* Item Detail Dialog */}
+      <Dialog open={!!selectedItem} onOpenChange={(open) => !open && setSelectedItem(null)}>
+        <DialogContent className="max-w-lg">
+          {selectedItem && (
+            <>
+              {selectedItem.image_url && (
+                <div className="aspect-video w-full overflow-hidden rounded-lg bg-brand-primary/5 -mt-2">
+                  <img src={selectedItem.image_url} alt={selectedItem.name} className="w-full h-full object-cover" />
+                </div>
+              )}
+              <DialogHeader>
+                <DialogTitle className="font-display text-2xl">{selectedItem.name}</DialogTitle>
+                <DialogDescription className="capitalize text-brand-accent font-medium">
+                  {selectedItem.category}
+                </DialogDescription>
+              </DialogHeader>
+              <p className="text-muted-foreground">{selectedItem.description}</p>
+              <div className="flex items-center justify-between pt-4 border-t">
+                <span className="text-2xl font-bold text-brand-accent">₦{selectedItem.price.toLocaleString()}</span>
+                <Button
+                  className="bg-brand-primary text-brand-secondary hover:bg-brand-primary/90"
+                  onClick={() => {
+                    handleAddToCart(selectedItem);
+                    setSelectedItem(null);
+                  }}
+                >
+                  <Plus className="w-4 h-4 mr-1" /> Add to Cart
+                </Button>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

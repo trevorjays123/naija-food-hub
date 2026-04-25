@@ -10,6 +10,8 @@ import { Navbar } from "@/components/Navbar";
 import { useCart } from "@/hooks/use-cart";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { isValidNigerianPhone, normalizeNigerianPhone } from "@/lib/validators";
+import { SEO } from "@/components/SEO";
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
@@ -48,6 +50,15 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (!isValidNigerianPhone(formData.phone)) {
+      toast({
+        title: "Invalid phone number",
+        description: "Enter a valid Nigerian phone number (e.g. 08012345678 or +2348012345678).",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -60,7 +71,7 @@ export default function CheckoutPage() {
         .insert({
           user_id: user?.id || null,
           customer_name: formData.fullName,
-          customer_phone: formData.phone,
+          customer_phone: normalizeNigerianPhone(formData.phone),
           customer_email: formData.email,
           delivery_address: formData.address,
           delivery_city: formData.city,
@@ -143,6 +154,7 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-brand-secondary">
+      <SEO title="Checkout · Taste Kitchen" description="Complete your order securely with Paystack." />
       <Navbar />
       
       <div className="container mx-auto px-6 py-8">

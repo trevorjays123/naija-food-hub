@@ -1,26 +1,24 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { 
-  LayoutDashboard, 
   Package, 
-  Users, 
-  Settings, 
   LogOut, 
   Plus, 
   Edit, 
   Trash2,
-  ChevronLeft,
   Loader2,
   CheckCircle,
   XCircle,
   Clock,
   Truck,
-  Utensils
+  Utensils,
+  MapPin,
+  Phone
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -39,7 +37,7 @@ interface Order {
   delivery_fee: number;
   total: number;
   payment_status: string;
-  delivery_status: string;
+  delivery_status: 'pending' | 'confirmed' | 'preparing' | 'out_for_delivery' | 'delivered' | 'cancelled';
   paystack_reference: string | null;
   created_at: string;
   order_items: {
@@ -54,7 +52,7 @@ interface MenuItem {
   name: string;
   description: string;
   price: number;
-  category: string;
+  category: 'nigerian' | 'continental' | 'fastfood';
   image_url: string | null;
   available: boolean;
 }
@@ -77,13 +75,12 @@ export default function AdminPage() {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [activeTab, setActiveTab] = useState("orders");
   
-  // Menu item form
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [menuForm, setMenuForm] = useState({
     name: "",
     description: "",
     price: "",
-    category: "nigerian",
+    category: "nigerian" as const,
     image_url: "",
     available: true,
   });
@@ -121,7 +118,6 @@ export default function AdminPage() {
   const fetchData = async () => {
     setLoading(true);
     
-    // Fetch orders
     const { data: ordersData } = await supabase
       .from('orders')
       .select(`
@@ -136,13 +132,12 @@ export default function AdminPage() {
     
     if (ordersData) setOrders(ordersData as Order[]);
     
-    // Fetch menu items
     const { data: menuData } = await supabase
       .from('menu_items')
       .select('*')
       .order('category');
     
-    if (menuData) setMenuItems(menuData);
+    if (menuData) setMenuItems(menuData as MenuItem[]);
     
     setLoading(false);
   };
@@ -150,7 +145,7 @@ export default function AdminPage() {
   const handleUpdateOrderStatus = async (orderId: string, newStatus: string) => {
     const { error } = await supabase
       .from('orders')
-      .update({ delivery_status: newStatus as any })
+      .update({ delivery_status: newStatus as Order['delivery_status'] })
       .eq('id', orderId);
     
     if (error) {
@@ -170,7 +165,7 @@ export default function AdminPage() {
       name: menuForm.name,
       description: menuForm.description,
       price: parseFloat(menuForm.price),
-      category: menuForm.category as 'nigerian' | 'continental' | 'fastfood',
+      category: menuForm.category as MenuItem['category'],
       image_url: menuForm.image_url || null,
       available: menuForm.available,
     };
@@ -386,7 +381,7 @@ export default function AdminPage() {
                         <Label>Category</Label>
                         <Select 
                           value={menuForm.category} 
-                          onValueChange={(v) => setMenuForm({...menuForm, category: v})}
+                          onValueChange={(v) => setMenuForm({...menuForm, category: v as 'nigerian' | 'continental' | 'fastfood'})}
                         >
                           <SelectTrigger>
                             <SelectValue />

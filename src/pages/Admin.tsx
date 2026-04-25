@@ -481,8 +481,17 @@ export default function AdminPage() {
                     <div className="space-y-2">
                       <Label>Item Image</Label>
                       {menuForm.image_url && (
-                        <div className="relative w-full h-40 rounded-lg overflow-hidden bg-brand-primary/5">
+                        <div className="relative w-full h-40 rounded-lg overflow-hidden bg-brand-primary/5 group">
                           <img src={menuForm.image_url} alt="Preview" className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={handleImageDelete}
+                            disabled={uploading}
+                            aria-label="Remove image"
+                            className="absolute top-2 right-2 w-8 h-8 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center shadow-md hover:opacity-90 disabled:opacity-50"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
                         </div>
                       )}
                       <div className="flex gap-2">

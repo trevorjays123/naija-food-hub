@@ -16,6 +16,7 @@ import {
   Phone,
   Upload,
   X,
+  ImageIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -87,6 +88,53 @@ export default function AdminPage() {
     available: true,
   });
   const [uploading, setUploading] = useState(false);
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [galleryLoading, setGalleryLoading] = useState(false);
+  const [galleryImages, setGalleryImages] = useState<{ path: string; url: string; name: string }[]>([]);
+
+  const loadGallery = async () => {
+    setGalleryLoading(true);
+    const folders = ["", "nigerian", "continental", "fastfood"];
+    const all: { path: string; url: string; name: string; created: string }[] = [];
+    for (const folder of folders) {
+      const { data, error } = await supabase.storage
+        .from("menu-images")
+        .list(folder, { limit: 200, sortBy: { column: "created_at", order: "desc" } });
+      if (error) continue;
+      for (const f of data || []) {
+        // Skip subfolder placeholders (no metadata)
+        if (!f.name || !f.metadata) continue;
+        const path = folder ? `${folder}/${f.name}` : f.name;
+        const { data: { publicUrl } } = supabase.storage.from("menu-images").getPublicUrl(path);
+        all.push({ path, url: publicUrl, name: f.name, created: f.created_at || "" });
+      }
+    }
+    all.sort((a, b) => (b.created || "").localeCompare(a.created || ""));
+    setGalleryImages(all);
+    setGalleryLoading(false);
+  };
+
+  const openGallery = () => {
+    setGalleryOpen(true);
+    loadGallery();
+  };
+
+  const selectGalleryImage = async (url: string) => {
+    if (editingItem) {
+      const { error } = await supabase
+        .from("menu_items")
+        .update({ image_url: url })
+        .eq("id", editingItem.id);
+      if (error) {
+        toast({ title: "Update failed", description: error.message, variant: "destructive" });
+        return;
+      }
+      fetchData();
+    }
+    setMenuForm((f) => ({ ...f, image_url: url }));
+    setGalleryOpen(false);
+    toast({ title: "Image selected" });
+  };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -511,6 +559,16 @@ export default function AdminPage() {
                             )}
                           </div>
                         </label>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={openGallery}
+                          disabled={uploading}
+                          className="gap-2"
+                        >
+                          <ImageIcon className="w-4 h-4" />
+                          Gallery
+                        </Button>
                       </div>
                       <Input
                         value={menuForm.image_url}
@@ -588,6 +646,50 @@ export default function AdminPage() {
           </TabsContent>
         </Tabs>
       </div>
+
+      <Dialog open={galleryOpen} onOpenChange={setGalleryOpen}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Image Gallery</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto py-4">
+            {galleryLoading ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-brand-accent" />
+              </div>
+            ) : galleryImages.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <ImageIcon className="w-12 h-12 mx-auto mb-2 opacity-30" />
+                <p>No images in storage yet.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {galleryImages.map((img) => {
+                  const selected = menuForm.image_url === img.url;
+                  return (
+                    <button
+                      key={img.path}
+                      type="button"
+                      onClick={() => selectGalleryImage(img.url)}
+                      className={`group relative aspect-square rounded-lg overflow-hidden border-2 transition ${selected ? 'border-brand-accent ring-2 ring-brand-accent/40' : 'border-transparent hover:border-brand-accent/60'}`}
+                    >
+                      <img src={img.url} alt={img.name} className="w-full h-full object-cover" loading="lazy" />
+                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-2">
+                        <p className="text-[10px] text-white truncate">{img.path}</p>
+                      </div>
+                      {selected && (
+                        <div className="absolute top-1 right-1 w-6 h-6 rounded-full bg-brand-accent text-brand-primary flex items-center justify-center">
+                          <CheckCircle className="w-4 h-4" />
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, Package, Clock, CheckCircle, Truck, XCircle, Loader2 } from "lucide-react";
+import { Search, Package, Clock, CheckCircle, Truck, XCircle, Loader2, MapPin, Phone, SeparatorHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { Navbar } from "@/components/Navbar";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";

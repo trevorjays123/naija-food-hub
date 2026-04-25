@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
-import { Plus, Minus, ShoppingBag, Search } from "lucide-react";
+import { Link, useSearchParams } from "react-router-dom";
+import { Plus, Minus, ShoppingBag, Search, Star, Utensils } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";

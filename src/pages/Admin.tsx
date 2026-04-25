@@ -443,11 +443,35 @@ export default function AdminPage() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label>Image URL (optional)</Label>
-                      <Input 
-                        value={menuForm.image_url} 
-                        onChange={(e) => setMenuForm({...menuForm, image_url: e.target.value})}
-                        placeholder="https://..."
+                      <Label>Item Image</Label>
+                      {menuForm.image_url && (
+                        <div className="relative w-full h-40 rounded-lg overflow-hidden bg-brand-primary/5">
+                          <img src={menuForm.image_url} alt="Preview" className="w-full h-full object-cover" />
+                        </div>
+                      )}
+                      <div className="flex gap-2">
+                        <label className="flex-1">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleImageUpload}
+                            disabled={uploading}
+                          />
+                          <div className={`flex items-center justify-center gap-2 px-4 py-2 border border-dashed rounded-md cursor-pointer hover:bg-brand-primary/5 transition ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                            {uploading ? (
+                              <><Loader2 className="w-4 h-4 animate-spin" /> Uploading...</>
+                            ) : (
+                              <><Upload className="w-4 h-4" /> {menuForm.image_url ? 'Replace Image' : 'Upload Image'}</>
+                            )}
+                          </div>
+                        </label>
+                      </div>
+                      <Input
+                        value={menuForm.image_url}
+                        onChange={(e) => setMenuForm({ ...menuForm, image_url: e.target.value })}
+                        placeholder="Or paste image URL..."
+                        className="text-xs"
                       />
                     </div>
                     <Button 

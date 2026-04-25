@@ -13,7 +13,8 @@ import {
   Truck,
   Utensils,
   MapPin,
-  Phone
+  Phone,
+  Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -84,6 +85,53 @@ export default function AdminPage() {
     image_url: "",
     available: true,
   });
+  const [uploading, setUploading] = useState(false);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Invalid file", description: "Please select an image file.", variant: "destructive" });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "File too large", description: "Max 5MB.", variant: "destructive" });
+      return;
+    }
+    setUploading(true);
+    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+    const path = `${menuForm.category}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const { error: uploadError } = await supabase.storage
+      .from('menu-images')
+      .upload(path, file, { cacheControl: '3600', upsert: false, contentType: file.type });
+
+    if (uploadError) {
+      setUploading(false);
+      toast({ title: "Upload failed", description: uploadError.message, variant: "destructive" });
+      return;
+    }
+
+    const { data: { publicUrl } } = supabase.storage.from('menu-images').getPublicUrl(path);
+
+    // If editing an existing item, persist immediately so image_url is updated even before Save
+    if (editingItem) {
+      const { error: updateError } = await supabase
+        .from('menu_items')
+        .update({ image_url: publicUrl })
+        .eq('id', editingItem.id);
+      if (updateError) {
+        setUploading(false);
+        toast({ title: "Update failed", description: updateError.message, variant: "destructive" });
+        return;
+      }
+      fetchData();
+    }
+
+    setMenuForm((f) => ({ ...f, image_url: publicUrl }));
+    setUploading(false);
+    toast({ title: "Image uploaded" });
+    e.target.value = "";
+  };
 
   useEffect(() => {
     const checkAdmin = async () => {
@@ -395,11 +443,35 @@ export default function AdminPage() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label>Image URL (optional)</Label>
-                      <Input 
-                        value={menuForm.image_url} 
-                        onChange={(e) => setMenuForm({...menuForm, image_url: e.target.value})}
-                        placeholder="https://..."
+                      <Label>Item Image</Label>
+                      {menuForm.image_url && (
+                        <div className="relative w-full h-40 rounded-lg overflow-hidden bg-brand-primary/5">
+                          <img src={menuForm.image_url} alt="Preview" className="w-full h-full object-cover" />
+                        </div>
+                      )}
+                      <div className="flex gap-2">
+                        <label className="flex-1">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleImageUpload}
+                            disabled={uploading}
+                          />
+                          <div className={`flex items-center justify-center gap-2 px-4 py-2 border border-dashed rounded-md cursor-pointer hover:bg-brand-primary/5 transition ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                            {uploading ? (
+                              <><Loader2 className="w-4 h-4 animate-spin" /> Uploading...</>
+                            ) : (
+                              <><Upload className="w-4 h-4" /> {menuForm.image_url ? 'Replace Image' : 'Upload Image'}</>
+                            )}
+                          </div>
+                        </label>
+                      </div>
+                      <Input
+                        value={menuForm.image_url}
+                        onChange={(e) => setMenuForm({ ...menuForm, image_url: e.target.value })}
+                        placeholder="Or paste image URL..."
+                        className="text-xs"
                       />
                     </div>
                     <Button 

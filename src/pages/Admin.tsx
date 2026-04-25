@@ -134,6 +134,41 @@ export default function AdminPage() {
     e.target.value = "";
   };
 
+  const handleImageDelete = async () => {
+    if (!menuForm.image_url) return;
+    if (!confirm("Remove this image?")) return;
+    setUploading(true);
+
+    // Try to remove from storage if the URL belongs to our bucket
+    const marker = "/storage/v1/object/public/menu-images/";
+    const idx = menuForm.image_url.indexOf(marker);
+    if (idx !== -1) {
+      const path = decodeURIComponent(menuForm.image_url.slice(idx + marker.length));
+      const { error: removeError } = await supabase.storage.from('menu-images').remove([path]);
+      if (removeError) {
+        // Non-fatal: continue clearing image_url even if file is already gone
+        console.warn("Storage remove failed:", removeError.message);
+      }
+    }
+
+    if (editingItem) {
+      const { error: updateError } = await supabase
+        .from('menu_items')
+        .update({ image_url: null })
+        .eq('id', editingItem.id);
+      if (updateError) {
+        setUploading(false);
+        toast({ title: "Update failed", description: updateError.message, variant: "destructive" });
+        return;
+      }
+      fetchData();
+    }
+
+    setMenuForm((f) => ({ ...f, image_url: "" }));
+    setUploading(false);
+    toast({ title: "Image removed" });
+  };
+
   useEffect(() => {
     const checkAdmin = async () => {
       const { data: { user } } = await supabase.auth.getUser();

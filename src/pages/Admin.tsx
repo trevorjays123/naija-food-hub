@@ -435,71 +435,20 @@ export default function AdminPage() {
           </TabsList>
           
           <TabsContent value="orders">
-            {loading ? (
-              <div className="flex justify-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin text-brand-accent" />
-              </div>
-            ) : orders.length === 0 ? (
-              <div className="text-center py-12">
-                <Package className="w-16 h-16 mx-auto text-brand-primary/20 mb-4" />
-                <h3 className="font-display text-xl font-semibold">No orders yet</h3>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {orders.map((order) => (
-                  <Card key={order.id}>
-                    <CardContent className="p-6">
-                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div>
-                          <div className="flex items-center gap-3 mb-2">
-                            <span className="font-mono font-semibold">#{order.id.slice(0, 8).toUpperCase()}</span>
-                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                              order.payment_status === 'paid' ? 'bg-green-100 text-green-700' :
-                              order.payment_status === 'pending' ? 'bg-amber-100 text-amber-700' :
-                              'bg-red-100 text-red-700'
-                            }`}>
-                              {order.payment_status}
-                            </span>
-                          </div>
-                          <p className="text-sm text-muted-foreground">{order.customer_name}</p>
-                          <p className="text-sm text-muted-foreground">{order.customer_phone}</p>
-                        </div>
-                        
-                        <div className="text-right">
-                          <p className="font-display text-xl font-bold text-brand-accent">₦{order.total.toLocaleString()}</p>
-                          <p className="text-sm text-muted-foreground">{new Date(order.created_at).toLocaleDateString()}</p>
-                        </div>
-                      </div>
-                      
-                      <Separator className="my-4" />
-                      
-                      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium">Status:</span>
-                          <Select 
-                            value={order.delivery_status} 
-                            onValueChange={(value) => handleUpdateOrderStatus(order.id, value)}
-                          >
-                            <SelectTrigger className="w-[180px]">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {statusOptions.map((opt) => (
-                                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        
-                        <div className="text-sm text-muted-foreground">
-                          {order.order_items.length} item{order.order_items.length !== 1 ? 's' : ''}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
+            <OrdersPanel
+              orders={orders}
+              loading={loading}
+              statusFilter={statusFilter}
+              setStatusFilter={setStatusFilter}
+              paymentFilter={paymentFilter}
+              setPaymentFilter={setPaymentFilter}
+              orderSearch={orderSearch}
+              setOrderSearch={setOrderSearch}
+              expandedOrders={expandedOrders}
+              toggleExpand={toggleExpand}
+              onUpdateStatus={handleUpdateOrderStatus}
+              onRefresh={fetchData}
+            />
           </TabsContent>
           
           <TabsContent value="menu">

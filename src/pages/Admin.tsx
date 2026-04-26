@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { 
   Package, 
@@ -17,6 +17,11 @@ import {
   Upload,
   X,
   ImageIcon,
+  Mail,
+  ChevronDown,
+  ChevronUp,
+  Search,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +31,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -36,12 +42,14 @@ interface Order {
   customer_email: string;
   delivery_address: string;
   delivery_city: string;
+  delivery_notes: string | null;
   subtotal: number;
   delivery_fee: number;
   total: number;
   payment_status: string;
   delivery_status: 'pending' | 'confirmed' | 'preparing' | 'out_for_delivery' | 'delivered' | 'cancelled';
   paystack_reference: string | null;
+  delivered_at: string | null;
   created_at: string;
   order_items: {
     item_name: string;

@@ -1,6 +1,6 @@
 import { MessageCircle } from "lucide-react";
 
-const PHONE = "2348001234567"; // Nigeria WhatsApp number (no +)
+const PHONE = "2348058174134"; // Nigeria WhatsApp number (no +)
 
 export function WhatsAppButton() {
   return (

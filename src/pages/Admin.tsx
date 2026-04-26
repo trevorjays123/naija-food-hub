@@ -676,3 +676,251 @@ export default function AdminPage() {
     </div>
   );
 }
+
+const statusBadgeStyles: Record<string, string> = {
+  pending: "bg-amber-100 text-amber-700",
+  confirmed: "bg-blue-100 text-blue-700",
+  preparing: "bg-purple-100 text-purple-700",
+  out_for_delivery: "bg-indigo-100 text-indigo-700",
+  delivered: "bg-green-100 text-green-700",
+  cancelled: "bg-red-100 text-red-700",
+};
+
+const statusIcons: Record<string, JSX.Element> = {
+  pending: <Clock className="w-3.5 h-3.5" />,
+  confirmed: <CheckCircle className="w-3.5 h-3.5" />,
+  preparing: <Utensils className="w-3.5 h-3.5" />,
+  out_for_delivery: <Truck className="w-3.5 h-3.5" />,
+  delivered: <CheckCircle className="w-3.5 h-3.5" />,
+  cancelled: <XCircle className="w-3.5 h-3.5" />,
+};
+
+interface OrdersPanelProps {
+  orders: Order[];
+  loading: boolean;
+  statusFilter: string;
+  setStatusFilter: (v: string) => void;
+  paymentFilter: string;
+  setPaymentFilter: (v: string) => void;
+  orderSearch: string;
+  setOrderSearch: (v: string) => void;
+  expandedOrders: Set<string>;
+  toggleExpand: (id: string) => void;
+  onUpdateStatus: (id: string, status: string) => void;
+  onRefresh: () => void;
+}
+
+function OrdersPanel({
+  orders,
+  loading,
+  statusFilter,
+  setStatusFilter,
+  paymentFilter,
+  setPaymentFilter,
+  orderSearch,
+  setOrderSearch,
+  expandedOrders,
+  toggleExpand,
+  onUpdateStatus,
+  onRefresh,
+}: OrdersPanelProps) {
+  const stats = useMemo(() => {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    return {
+      total: orders.length,
+      active: orders.filter(o => !['delivered', 'cancelled'].includes(o.delivery_status)).length,
+      delivered: orders.filter(o => o.delivery_status === 'delivered').length,
+      todayRevenue: orders
+        .filter(o => o.payment_status === 'paid' && new Date(o.created_at) >= today)
+        .reduce((sum, o) => sum + Number(o.total), 0),
+    };
+  }, [orders]);
+
+  const filtered = useMemo(() => {
+    const q = orderSearch.trim().toLowerCase();
+    return orders.filter(o => {
+      if (statusFilter !== 'all' && o.delivery_status !== statusFilter) return false;
+      if (paymentFilter !== 'all' && o.payment_status !== paymentFilter) return false;
+      if (q) {
+        const hay = `${o.id} ${o.customer_name} ${o.customer_phone} ${o.customer_email}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [orders, statusFilter, paymentFilter, orderSearch]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-brand-accent" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card><CardContent className="p-4">
+          <p className="text-xs uppercase text-muted-foreground">Total Orders</p>
+          <p className="font-display text-2xl font-bold">{stats.total}</p>
+        </CardContent></Card>
+        <Card><CardContent className="p-4">
+          <p className="text-xs uppercase text-muted-foreground">Active</p>
+          <p className="font-display text-2xl font-bold text-amber-600">{stats.active}</p>
+        </CardContent></Card>
+        <Card><CardContent className="p-4">
+          <p className="text-xs uppercase text-muted-foreground">Delivered</p>
+          <p className="font-display text-2xl font-bold text-green-600">{stats.delivered}</p>
+        </CardContent></Card>
+        <Card><CardContent className="p-4">
+          <p className="text-xs uppercase text-muted-foreground">Today's Revenue</p>
+          <p className="font-display text-2xl font-bold text-brand-accent">₦{stats.todayRevenue.toLocaleString()}</p>
+        </CardContent></Card>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center">
+        <div className="relative flex-1">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={orderSearch}
+            onChange={(e) => setOrderSearch(e.target.value)}
+            placeholder="Search by order #, name, phone or email"
+            className="pl-9"
+          />
+        </div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-full md:w-[200px]"><SelectValue placeholder="Delivery status" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All statuses</SelectItem>
+            {statusOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={paymentFilter} onValueChange={setPaymentFilter}>
+          <SelectTrigger className="w-full md:w-[160px]"><SelectValue placeholder="Payment" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All payments</SelectItem>
+            <SelectItem value="paid">Paid</SelectItem>
+            <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="failed">Failed</SelectItem>
+          </SelectContent>
+        </Select>
+        <Button variant="outline" onClick={onRefresh} aria-label="Refresh">
+          <RefreshCw className="w-4 h-4" />
+        </Button>
+      </div>
+
+      {/* List */}
+      {filtered.length === 0 ? (
+        <div className="text-center py-12">
+          <Package className="w-16 h-16 mx-auto text-brand-primary/20 mb-4" />
+          <h3 className="font-display text-xl font-semibold">No orders match your filters</h3>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {filtered.map((order) => {
+            const expanded = expandedOrders.has(order.id);
+            const created = new Date(order.created_at);
+            return (
+              <Card key={order.id}>
+                <CardContent className="p-6">
+                  <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 mb-2">
+                        <span className="font-mono font-semibold">#{order.id.slice(0, 8).toUpperCase()}</span>
+                        <Badge className={`${statusBadgeStyles[order.delivery_status]} gap-1 capitalize`}>
+                          {statusIcons[order.delivery_status]}
+                          {order.delivery_status.replace(/_/g, ' ')}
+                        </Badge>
+                        <Badge className={
+                          order.payment_status === 'paid' ? 'bg-green-100 text-green-700' :
+                          order.payment_status === 'pending' ? 'bg-amber-100 text-amber-700' :
+                          'bg-red-100 text-red-700'
+                        }>
+                          {order.payment_status}
+                        </Badge>
+                        {order.delivered_at && (
+                          <Badge className="bg-emerald-100 text-emerald-700 gap-1">
+                            <CheckCircle className="w-3.5 h-3.5" />
+                            Delivered {new Date(order.delivered_at).toLocaleString()}
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="font-medium">{order.customer_name}</p>
+                      <p className="text-sm text-muted-foreground flex items-center gap-1.5"><Phone className="w-3.5 h-3.5" /> {order.customer_phone}</p>
+                      <p className="text-sm text-muted-foreground flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5" /> {order.delivery_address}, {order.delivery_city}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-display text-xl font-bold text-brand-accent">₦{Number(order.total).toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground">{created.toLocaleDateString()} · {created.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{order.order_items?.length ?? 0} item{(order.order_items?.length ?? 0) !== 1 ? 's' : ''}</p>
+                    </div>
+                  </div>
+
+                  <Separator className="my-4" />
+
+                  <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">Update status:</span>
+                      <Select value={order.delivery_status} onValueChange={(v) => onUpdateStatus(order.id, v)}>
+                        <SelectTrigger className="w-[200px]"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {statusOptions.map(opt => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={() => toggleExpand(order.id)} className="gap-1">
+                      {expanded ? <>Hide details <ChevronUp className="w-4 h-4" /></> : <>View details <ChevronDown className="w-4 h-4" /></>}
+                    </Button>
+                  </div>
+
+                  {expanded && (
+                    <div className="mt-4 pt-4 border-t space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <p className="font-semibold mb-1">Contact</p>
+                          <p className="text-muted-foreground flex items-center gap-1.5"><Mail className="w-3.5 h-3.5" /> {order.customer_email}</p>
+                          <p className="text-muted-foreground flex items-center gap-1.5"><Phone className="w-3.5 h-3.5" /> {order.customer_phone}</p>
+                        </div>
+                        <div>
+                          <p className="font-semibold mb-1">Delivery</p>
+                          <p className="text-muted-foreground">{order.delivery_address}</p>
+                          <p className="text-muted-foreground">{order.delivery_city}</p>
+                          {order.delivery_notes && <p className="text-muted-foreground italic mt-1">"{order.delivery_notes}"</p>}
+                        </div>
+                      </div>
+
+                      <div>
+                        <p className="font-semibold mb-2 text-sm">Items</p>
+                        <div className="space-y-1.5">
+                          {order.order_items?.map((it, i) => (
+                            <div key={i} className="flex justify-between text-sm">
+                              <span>{it.quantity}× {it.item_name}</span>
+                              <span className="font-medium">₦{(Number(it.unit_price) * it.quantity).toLocaleString()}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <Separator className="my-3" />
+                        <div className="space-y-1 text-sm">
+                          <div className="flex justify-between text-muted-foreground"><span>Subtotal</span><span>₦{Number(order.subtotal).toLocaleString()}</span></div>
+                          <div className="flex justify-between text-muted-foreground"><span>Delivery fee</span><span>₦{Number(order.delivery_fee).toLocaleString()}</span></div>
+                          <div className="flex justify-between font-semibold"><span>Total</span><span className="text-brand-accent">₦{Number(order.total).toLocaleString()}</span></div>
+                        </div>
+                      </div>
+
+                      {order.paystack_reference && (
+                        <p className="text-xs text-muted-foreground">Paystack ref: <span className="font-mono">{order.paystack_reference}</span></p>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+

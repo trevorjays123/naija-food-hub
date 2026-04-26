@@ -5,7 +5,8 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  base: "/naija-food-hub/", // Add this line!
+  // Use repo subpath only for production builds (GitHub Pages); root in dev/Lovable preview
+  base: mode === "production" ? "/naija-food-hub/" : "/",
   server: {
     host: "::",
     port: 8080,

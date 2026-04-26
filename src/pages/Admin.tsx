@@ -259,6 +259,28 @@ export default function AdminPage() {
     checkAdmin();
   }, [navigate, toast]);
 
+  // Realtime updates for incoming orders + status changes
+  useEffect(() => {
+    if (!isAdmin) return;
+    const channel = supabase
+      .channel('admin-orders')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+        fetchData();
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isAdmin]);
+
+  const toggleExpand = (id: string) => {
+    setExpandedOrders((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
   const fetchData = async () => {
     setLoading(true);
     

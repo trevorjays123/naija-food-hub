@@ -58,7 +58,7 @@ export default function Home() {
             </div>
             
             <h1 className="font-display text-5xl md:text-6xl lg:text-7xl font-bold text-brand-secondary leading-[1.1] mb-6">
-              Taste the Soul of <span className="text-brand-accent">Nigeria</span>
+              Satisfying Your <span className="text-brand-accent">Taste Buds</span>
             </h1>
             
             <p className="text-lg md:text-xl text-brand-secondary/80 mb-8 max-w-lg leading-relaxed">
@@ -73,7 +73,7 @@ export default function Home() {
                 </Button>
               </Link>
               <Link to="/menu">
-                <Button size="lg" variant="outline" className="border-brand-secondary text-brand-secondary hover:bg-brand-secondary/10 font-semibold text-lg px-8">
+                <Button size="lg" variant="outline" className="bg-brand-secondary/10 backdrop-blur-sm border-2 border-brand-secondary text-brand-secondary hover:bg-brand-secondary hover:text-brand-primary font-semibold text-lg px-8">
                   View Menu
                 </Button>
               </Link>
